@@ -22,7 +22,6 @@ export default function LoginPage() {
 
     try {
       // Simulation of API call
-      // In real world: const res = await api.post('/auth/login', { username, password });
       await new Promise(resolve => setTimeout(resolve, 1500));
 
       if ((username === 'admin' || username === 'superadmin' || username === 'support') && password === 'password') {
@@ -35,41 +34,43 @@ export default function LoginPage() {
         const mockToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'; // Mock JWT
 
         setAuth(mockUser, mockToken);
-        toast.success('Login successful! Redirecting...');
+        toast.success('เข้าสู่ระบบสำเร็จ กำลังเข้าสู่แดชบอร์ด...');
         router.push('/admin/dashboard');
       } else {
-        toast.error('Invalid credentials. Try admin / password or support / password');
+        toast.error('ข้อมูลไม่ถูกต้อง โปรดลองอีกครั้ง (ใช้ admin / password)');
       }
     } catch (error) {
-      toast.error('Something went wrong. Please try again.');
+      toast.error('เกิดข้อผิดพลาด โปรดลองอีกครั้ง');
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="flex h-screen w-screen items-center justify-center bg-muted/50 px-4">
-      <div className="w-full max-w-md space-y-8">
-        <div className="flex flex-col items-center justify-center space-y-2 text-center">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/20">
-            <Trophy size={28} />
+    <div className="flex h-screen w-screen items-center justify-center bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/20 via-background to-background px-4">
+      <div className="w-full max-w-md space-y-10 animate-in fade-in zoom-in-95 duration-1000">
+        <div className="flex flex-col items-center justify-center space-y-4 text-center">
+          <div className="flex h-16 w-16 items-center justify-center rounded-[1.5rem] bg-sidebar text-sidebar-primary shadow-2xl shadow-primary/30 ring-4 ring-sidebar-primary/20 animate-bounce-slow">
+            <Trophy size={32} strokeWidth={2.5} />
           </div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">Sport Hub</h1>
-          <p className="text-muted-foreground font-medium">Administration Portal</p>
+          <div className="space-y-1">
+            <h1 className="text-5xl font-black tracking-tighter text-foreground">SPORT HUB</h1>
+            <p className="text-primary font-black tracking-[0.4em] uppercase text-[10px] ml-1">Royal Sports Administration</p>
+          </div>
         </div>
 
-        <Card className="border-none shadow-xl ring-1 ring-border/50">
-          <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl font-bold">Sign in</CardTitle>
-            <CardDescription>
-              Enter your credentials below to access the dashboard.
+        <Card className="border-none shadow-[0_20px_50px_rgba(0,0,0,0.1)] ring-1 ring-border/50 rounded-[2.5rem] overflow-hidden bg-card/70 backdrop-blur-xl">
+          <CardHeader className="space-y-1 bg-muted/40 pb-10 pt-10">
+            <CardTitle className="text-3xl font-black text-center tracking-tight">เข้าสู่ระบบ</CardTitle>
+            <CardDescription className="text-center font-bold text-muted-foreground/70 text-sm">
+              กรอกข้อมูลเพื่อเริ่มต้นการจัดการระบบ <span className="text-primary">Sport Hub</span>
             </CardDescription>
           </CardHeader>
           <form onSubmit={handleLogin}>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70" htmlFor="username">
-                  Username
+            <CardContent className="space-y-6 pt-10 px-10">
+              <div className="space-y-2.5">
+                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1" htmlFor="username">
+                  ชื่อผู้ใช้งาน
                 </label>
                 <Input
                   id="username"
@@ -78,15 +79,15 @@ export default function LoginPage() {
                   onChange={(e) => setUsername(e.target.value)}
                   required
                   disabled={isLoading}
-                  className="h-11"
+                  className="h-14 border-2 border-muted bg-background/50 font-black text-base focus-visible:ring-primary focus-visible:border-primary/20 rounded-2xl transition-all"
                 />
               </div>
-              <div className="space-y-2">
+              <div className="space-y-2.5">
                 <div className="flex items-center justify-between">
-                  <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70" htmlFor="password">
-                    Password
+                  <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1" htmlFor="password">
+                    รหัสผ่าน
                   </label>
-                  <a href="#" className="text-xs text-primary hover:underline">Forgot password?</a>
+                  <a href="#" className="text-[10px] font-black text-primary hover:text-emerald-700 uppercase tracking-widest transition-colors">ลืมรหัสผ่าน?</a>
                 </div>
                 <Input
                   id="password"
@@ -96,28 +97,33 @@ export default function LoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   disabled={isLoading}
-                  className="h-11"
+                  className="h-14 border-2 border-muted bg-background/50 font-black text-base focus-visible:ring-primary focus-visible:border-primary/20 rounded-2xl transition-all"
                 />
               </div>
             </CardContent>
-            <CardFooter>
-              <Button type="submit" className="w-full h-11 font-semibold text-base shadow-lg shadow-primary/20" disabled={isLoading}>
+            <CardFooter className="pb-10 px-10 pt-4">
+              <Button type="submit" className="w-full h-16 font-black text-sm uppercase tracking-widest shadow-2xl shadow-primary/30 rounded-2xl bg-primary hover:bg-emerald-900 transition-all duration-300 active:scale-95 group" disabled={isLoading}>
                 {isLoading ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Authenticating...
+                    <Loader2 className="mr-3 h-5 w-5 animate-spin" />
+                    กำลังตรวจสอบ...
                   </>
                 ) : (
-                  'Login'
+                  <span className="flex items-center gap-2">
+                    เข้าสู่ระบบ Portal <Trophy size={16} className="text-secondary" />
+                  </span>
                 )}
               </Button>
             </CardFooter>
           </form>
         </Card>
         
-        <p className="text-center text-xs text-muted-foreground/60">
-          &copy; 2026 Sport Hub Technologies. All rights reserved.
-        </p>
+        <div className="flex flex-col items-center gap-4">
+          <p className="text-center text-[9px] font-black uppercase tracking-[0.3em] text-muted-foreground/40 leading-relaxed">
+            &copy; 2026 Sport Hub Technologies<br/>
+            Royal Sports Management System v1.0
+          </p>
+        </div>
       </div>
     </div>
   );

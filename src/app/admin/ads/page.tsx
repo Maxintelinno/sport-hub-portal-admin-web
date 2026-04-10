@@ -1,28 +1,30 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   Plus, 
-  Image as ImageIcon, 
+  ImageIcon, 
   Trash2, 
-  Edit3, 
-  Eye,
+  ExternalLink,
   Calendar,
+  Monitor,
   Layout,
-  UploadCloud,
-  ChevronRight
+  Search,
+  ArrowUp,
+  ArrowDown,
+  ArrowUpDown
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from '@/components/ui/table';
 import { 
   Dialog, 
   DialogContent, 
@@ -32,210 +34,230 @@ import {
   DialogTitle, 
   DialogTrigger 
 } from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { useAuth } from '@/store/useAuth';
 import { toast } from 'sonner';
+import { TableSkeleton } from '@/components/admin/TableSkeleton';
 import { ConfirmAction } from '@/components/admin/ConfirmAction';
 
 const adsData = [
-  { id: 1, title: 'Summer Promotion', position: 'home_top', image: 'https://images.unsplash.com/photo-1541252260730-0412e3e2107e?q=80&w=600&h=400&fit=crop', startDate: '2026-04-01', endDate: '2026-04-30', status: 'active' },
-  { id: 2, title: 'New Shoes Arrival', position: 'mid_list', image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=80&w=600&h=400&fit=crop', startDate: '2026-04-05', endDate: '2026-05-05', status: 'active' },
-  { id: 3, title: 'Grand Opening - Rayong', position: 'bottom', image: 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?q=80&w=600&h=400&fit=crop', startDate: '2026-03-15', endDate: '2026-04-15', status: 'inactive' },
+  { id: 1, title: 'Summer Sale 2026', position: 'หน้าแรก (บน)', startDate: '2026-04-01', endDate: '2026-04-30', status: 'active', imageUrl: 'https://images.unsplash.com/photo-1517649763962-0c623066013b?w=800&q=80' },
+  { id: 2, title: 'New Badminton Courts', position: 'กลาง', startDate: '2026-03-15', endDate: '2026-05-15', status: 'active', imageUrl: 'https://images.unsplash.com/photo-1626224580175-340ad0e3a76b?w=800&q=80' },
+  { id: 3, title: 'Member Special Offer', position: 'ล่าง', startDate: '2026-04-10', endDate: '2026-06-10', status: 'draft', imageUrl: 'https://images.unsplash.com/photo-1541534741688-6078c64230d3?w=800&q=80' },
 ];
 
 export default function AdsPage() {
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
-  const [ads, setAds] = useState(adsData);
-  const [isAdding, setIsAdding] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
 
-  const handleDelete = (id: number) => {
-    setAds(ads.filter(ad => ad.id !== id));
-    toast.error('Banner deleted successfully.');
+  useEffect(() => {
+    const timer = setTimeout(() => setIsLoading(false), 1200);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const handleSort = (key: string) => {
+    let direction: 'asc' | 'desc' = 'asc';
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
   };
 
-  const handleCreate = (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsAdding(false);
-    toast.success('New banner created successfully!');
+  const filteredAds = adsData.filter(ad => {
+    return ad.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
+           ad.position.toLowerCase().includes(searchTerm.toLowerCase());
+  });
+
+  const sortedAds = [...filteredAds].sort((a: any, b: any) => {
+    if (!sortConfig) return 0;
+    const { key, direction } = sortConfig;
+    let valA = a[key];
+    let valB = b[key];
+    if (valA < valB) return direction === 'asc' ? -1 : 1;
+    if (valA > valB) return direction === 'asc' ? 1 : -1;
+    return 0;
+  });
+
+  const handleDelete = (id: number) => {
+    toast.error(`ลบแบนเนอร์ #${id} เรียบร้อยแล้ว`);
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
+    <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Banner Ads</h1>
-          <p className="text-muted-foreground mt-1 text-lg">Control the promotional materials visible on the mobile app and website.</p>
+          <h1 className="text-3xl font-black tracking-tight text-foreground">การจัดการโฆษณา</h1>
+          <p className="text-muted-foreground mt-1 font-bold">จัดการแบนเนอร์และตำแหน่งโฆษณาบนแอปพลิเคชัน</p>
         </div>
         {isAdmin && (
-          <Dialog open={isAdding} onOpenChange={setIsAdding}>
-            <DialogTrigger
-              render={
-                <Button className="h-11 px-6 font-bold gap-2 shadow-lg shadow-primary/20">
-                  <Plus size={18} /> Create New Banner
-                </Button>
-              }
-            />
-            <DialogContent className="sm:max-w-[500px]">
-              <form onSubmit={handleCreate}>
-                <DialogHeader>
-                  <DialogTitle className="text-2xl font-black">Promotion Builder</DialogTitle>
-                  <DialogDescription>
-                    Configure your banner visuals and targeting.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="grid gap-6 py-6">
-                  <div className="space-y-2">
-                    <label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Banner Title</label>
-                    <Input placeholder="E.g. Summer Sport Sale" className="font-bold h-11 border-2" required />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Position</label>
-                      <Select defaultValue="home_top">
-                        <SelectTrigger className="font-bold h-11 border-2">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="home_top">Home Top Slider</SelectItem>
-                          <SelectItem value="mid_list">In-List Feed</SelectItem>
-                          <SelectItem value="bottom">Footer Banner</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Status</label>
-                      <Select defaultValue="active">
-                        <SelectTrigger className="font-bold h-11 border-2">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="active">Active (Visible)</SelectItem>
-                          <SelectItem value="inactive">Inactive (Hidden)</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Image URL</label>
-                    <div className="flex gap-2">
-                      <Input placeholder="https://..." className="font-medium h-11 border-2" required />
-                      <Button type="button" variant="outline" className="h-11 shrink-0 font-bold border-2">
-                        <UploadCloud size={18} className="mr-2" /> Upload
-                      </Button>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Start Date</label>
-                      <Input type="date" className="font-bold h-11 border-2" required />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-xs font-black uppercase tracking-widest text-muted-foreground">End Date</label>
-                      <Input type="date" className="font-bold h-11 border-2" required />
-                    </div>
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button variant="outline" type="button" onClick={() => setIsAdding(false)} className="h-11 font-bold border-2">Cancel</Button>
-                  <Button type="submit" className="h-11 font-black px-8">Launch Banner</Button>
-                </DialogFooter>
-              </form>
-            </DialogContent>
-          </Dialog>
-        )}
-      </div>
-
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {ads.map((ad) => (
-          <Card key={ad.id} className="overflow-hidden border-none shadow-lg group hover:-translate-y-1 transition-all duration-300">
-            <div className="relative h-48 w-full overflow-hidden">
-              <img 
-                src={ad.image} 
-                alt={ad.title} 
-                className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110" 
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60" />
-              <Badge 
-                className={`absolute top-4 right-4 font-black uppercase tracking-widest px-3
-                  ${ad.status === 'active' ? 'bg-emerald-500' : 'bg-muted text-muted-foreground'}
-                `}
-              >
-                {ad.status}
-              </Badge>
-              <div className="absolute bottom-4 left-4">
-                <Badge variant="outline" className="bg-white/20 text-white border-white/50 backdrop-blur-md font-bold text-[10px] uppercase tracking-tighter">
-                  {ad.position.replace('_', ' ')}
-                </Badge>
-              </div>
-            </div>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-xl font-black">{ad.title}</CardTitle>
-              <CardDescription className="flex items-center gap-1 font-bold">
-                <Calendar size={14} /> {ad.startDate} to {ad.endDate}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between p-3 bg-muted/30 rounded-xl border border-dashed border-border">
-                <div className="flex items-center gap-2">
-                  <Layout size={16} className="text-primary" />
-                  <p className="text-xs font-black uppercase tracking-widest text-muted-foreground">Placement</p>
-                </div>
-                <p className="text-sm font-black text-foreground">Mobile App</p>
-              </div>
-            </CardContent>
-            <CardFooter className="flex gap-2 pt-0">
-              {isAdmin && (
-                <>
-                  <Button size="sm" variant="outline" className="flex-1 font-bold h-10 border-2">
-                    <Edit3 size={14} className="mr-2" /> Edit
+           <Dialog>
+              <DialogTrigger
+                render={
+                  <Button className="h-11 px-6 font-black gap-2 shadow-xl shadow-primary/20 rounded-xl">
+                    <Plus size={18} /> เพิ่มแบนเนอร์ใหม่
                   </Button>
-                  <ConfirmAction
-                    trigger={
-                      <Button size="icon" variant="ghost" className="h-10 w-10 text-rose-500 hover:text-rose-600 hover:bg-rose-50 border-2 border-transparent hover:border-rose-100 rounded-lg shrink-0">
-                        <Trash2 size={18} />
-                      </Button>
-                    }
-                    title="Delete this banner?"
-                    description={`Are you sure you want to delete "${ad.title}"? This will immediately remove it from the mobile app and website.`}
-                    onConfirm={() => handleDelete(ad.id)}
-                    variant="destructive"
-                    confirmText="Yes, Delete Ad"
-                  />
-                </>
-              )}
-            </CardFooter>
-          </Card>
-        ))}
-        
-        {/* Placeholder for adding */}
-        {isAdmin && (
-          <button 
-            onClick={() => setIsAdding(true)}
-            className="group flex flex-col items-center justify-center gap-4 rounded-2xl border-2 border-dashed border-muted hover:border-primary hover:bg-primary/5 transition-all min-h-[300px]"
-          >
-            <div className="p-4 bg-muted text-muted-foreground rounded-full group-hover:bg-primary group-hover:text-primary-foreground transition-colors shadow-sm">
-               <Plus size={32} />
-            </div>
-            <div className="text-center">
-              <p className="font-black text-lg text-foreground group-hover:text-primary transition-colors">Add New Promotion</p>
-              <p className="text-xs font-bold text-muted-foreground">Boost your reach and engagement</p>
-            </div>
-          </button>
+                }
+              />
+              <DialogContent className="sm:max-w-[500px] rounded-3xl border-2">
+                 <DialogHeader>
+                    <DialogTitle className="text-2xl font-black">เพิ่มแบนเนอร์</DialogTitle>
+                    <DialogDescription className="font-bold">
+                      กรอกข้อมูลแบนเนอร์ที่ต้องการแสดงบนหน้าแอป
+                    </DialogDescription>
+                 </DialogHeader>
+                 <div className="grid gap-6 py-4">
+                    <div className="grid gap-2">
+                       <label className="text-xs font-black uppercase tracking-widest text-muted-foreground">หัวข้อโฆษณา</label>
+                       <Input placeholder="เช่น โปรโมชั่นฤดูร้อน" className="h-11 border-2 font-bold rounded-xl" />
+                    </div>
+                    <div className="grid gap-2">
+                       <label className="text-xs font-black uppercase tracking-widest text-muted-foreground">ตำแหน่ง</label>
+                       <Select>
+                          <SelectTrigger className="h-11 border-2 font-bold rounded-xl">
+                             <SelectValue placeholder="เลือกตำแหน่ง" />
+                          </SelectTrigger>
+                          <SelectContent>
+                             <SelectItem value="top" className="font-bold">หน้าแรก (บน)</SelectItem>
+                             <SelectItem value="middle" className="font-bold">กลาง</SelectItem>
+                             <SelectItem value="bottom" className="font-bold">ล่าง</SelectItem>
+                          </SelectContent>
+                       </Select>
+                    </div>
+                    <div className="grid gap-2">
+                       <label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Image URL</label>
+                       <Input placeholder="https://..." className="h-11 border-2 font-bold rounded-xl" />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                       <div className="grid gap-2">
+                          <label className="text-xs font-black uppercase tracking-widest text-muted-foreground">วันที่เริ่ม</label>
+                          <Input type="date" className="h-11 border-2 font-bold rounded-xl" />
+                       </div>
+                       <div className="grid gap-2">
+                          <label className="text-xs font-black uppercase tracking-widest text-muted-foreground">วันที่สิ้นสุด</label>
+                          <Input type="date" className="h-11 border-2 font-bold rounded-xl" />
+                       </div>
+                    </div>
+                 </div>
+                 <DialogFooter>
+                    <Button className="h-11 font-black uppercase tracking-widest w-full rounded-xl shadow-lg shadow-primary/20">บันทึกข้อมูล</Button>
+                 </DialogFooter>
+              </DialogContent>
+           </Dialog>
         )}
       </div>
 
-      {/* Analytics Preview */}
-      <Card className="border-none shadow-md bg-secondary/30">
-        <CardContent className="p-8 flex items-center justify-between">
-          <div className="space-y-1">
-             <h4 className="text-2xl font-black">Promotion Analytics</h4>
-             <p className="text-muted-foreground font-bold">Your ads were seen by 42,500 users this week.</p>
+      <div className="grid gap-4 md:grid-cols-4">
+         {[
+           { label: 'โฆษณาที่ใช้งานอยู่', value: '12', icon: Monitor, color: 'text-emerald-500', bg: 'bg-emerald-50' },
+           { label: 'กำลังรอคิว', value: '4', icon: Calendar, color: 'text-blue-500', bg: 'bg-blue-50' },
+           { label: 'สไลด์ที่ว่าง', value: '2', icon: Layout, color: 'text-amber-500', bg: 'bg-amber-50' },
+           { label: 'ยอดคลิกรวม', value: '2.5k', icon: Plus, color: 'text-purple-500', bg: 'bg-purple-50' },
+         ].map((item, idx) => (
+           <div key={idx} className="flex flex-col gap-1 border-none shadow-lg rounded-2xl p-5 bg-card/50 backdrop-blur-sm">
+             <div className={`w-fit p-2 ${item.bg} ${item.color} rounded-xl mb-2 shadow-sm`}>
+               <item.icon size={18} />
+             </div>
+             <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">{item.label}</p>
+             <p className="text-2xl font-black">{item.value}</p>
+           </div>
+         ))}
+      </div>
+
+      <div className="bg-card rounded-3xl border shadow-xl overflow-hidden ring-1 ring-border/50">
+        <div className="p-6 border-b bg-muted/20 flex flex-col md:flex-row gap-4 items-center justify-between">
+          <div className="relative w-full md:max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input 
+              placeholder="ค้นหาโฆษณา..." 
+              className="pl-10 h-11 border-2 font-bold bg-background rounded-xl"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
           </div>
-          <Button variant="outline" className="h-12 font-black px-8 border-2 gap-2">
-             Detailed Insight <ChevronRight size={18} />
-          </Button>
-        </CardContent>
-      </Card>
+        </div>
+
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader className="bg-muted/30 sticky top-0 z-10">
+              <TableRow className="hover:bg-transparent border-b">
+                <TableHead onClick={() => handleSort('title')} className="font-black text-[10px] uppercase tracking-widest py-5 px-6 cursor-pointer hover:text-primary transition-colors">
+                   <div className="flex items-center gap-2">
+                    หัวข้อโฆษณา {sortConfig?.key === 'title' ? (sortConfig.direction === 'asc' ? <ArrowUp size={12} /> : <ArrowDown size={12} />) : <ArrowUpDown size={12} className="opacity-30" />}
+                  </div>
+                </TableHead>
+                <TableHead className="font-black text-[10px] uppercase tracking-widest py-5 px-6">ตำแหน่ง</TableHead>
+                <TableHead className="font-black text-[10px] uppercase tracking-widest py-5 px-6">วันที่เริ่ม - สิ้นสุด</TableHead>
+                <TableHead className="font-black text-[10px] uppercase tracking-widest py-5 px-6 text-center">สถานะ</TableHead>
+                <TableHead className="w-[80px] py-5 px-6 text-right"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="p-0">
+                    <TableSkeleton columnCount={5} rowCount={3} />
+                  </TableCell>
+                </TableRow>
+              ) : sortedAds.map((ad) => (
+                <TableRow key={ad.id} className="hover:bg-muted/30 transition-colors border-b last:border-0 border-muted">
+                  <TableCell className="px-6 py-5">
+                    <div className="flex items-center gap-4">
+                       <div className="h-12 w-20 bg-muted rounded-lg overflow-hidden flex-shrink-0 shadow-inner border">
+                          <img src={ad.imageUrl} alt={ad.title} className="h-full w-full object-cover" />
+                       </div>
+                       <p className="font-black text-sm">{ad.title}</p>
+                    </div>
+                  </TableCell>
+                  <TableCell className="px-6 py-5 font-bold text-xs uppercase text-primary bg-primary/5 w-fit rounded-lg inline-block m-5 h-8 leading-8 px-3">
+                    {ad.position}
+                  </TableCell>
+                  <TableCell className="px-6 py-5">
+                    <p className="text-sm font-bold text-muted-foreground">{ad.startDate} ถึง {ad.endDate}</p>
+                  </TableCell>
+                  <TableCell className="px-6 py-5 text-center">
+                    <Badge 
+                      variant={ad.status === 'active' ? 'default' : 'outline'}
+                      className="rounded-full px-3 py-0.5 text-[9px] font-black uppercase tracking-widest"
+                    >
+                      {ad.status === 'active' ? 'ใช้งานอยู่' : 'ร่าง'}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="px-6 py-5 text-right">
+                    <div className="flex items-center justify-end gap-1">
+                      <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl hover:bg-muted">
+                        <ExternalLink size={16} />
+                      </Button>
+                      {isAdmin && (
+                         <ConfirmAction
+                            trigger={
+                               <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl text-rose-500 hover:bg-rose-50">
+                                  <Trash2 size={16} />
+                               </Button>
+                            }
+                            title="ลบแบนเนอร์นี้?"
+                            description="แบนเนอร์จะถูกลบออกจากระบบและหยุดแสดงผลทันที"
+                            onConfirm={() => handleDelete(ad.id)}
+                            variant="destructive"
+                            confirmText="ใช่, ลบออก"
+                         />
+                      )}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
     </div>
   );
 }

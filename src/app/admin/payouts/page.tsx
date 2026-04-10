@@ -1,20 +1,17 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   Search, 
-  BadgeDollarSign, 
-  History, 
-  CheckCircle2, 
-  Clock,
-  ArrowUpRight,
-  Download,
-  Filter,
-  Eye,
+  MoreVertical, 
+  ArrowUpDown, 
+  BadgeDollarSign,
   Wallet,
+  Calendar,
+  ExternalLink,
+  CheckCircle2,
   ArrowUp,
-  ArrowDown,
-  ArrowUpDown
+  ArrowDown
 } from 'lucide-react';
 import { 
   Table, 
@@ -27,7 +24,15 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuGroup,
+  DropdownMenuItem, 
+  DropdownMenuLabel, 
+  DropdownMenuSeparator, 
+  DropdownMenuTrigger 
+} from '@/components/ui/dropdown-menu';
 import { 
   Select, 
   SelectContent, 
@@ -37,16 +42,14 @@ import {
 } from '@/components/ui/select';
 import { useAuth } from '@/store/useAuth';
 import { toast } from 'sonner';
-import { useEffect } from 'react';
 import { TableSkeleton } from '@/components/admin/TableSkeleton';
 import { ConfirmAction } from '@/components/admin/ConfirmAction';
 
 const payoutsData = [
-  { id: 'PAYOUT-771', owner: 'Kittisak Sport Complex', amount: '฿142,500', status: 'pending', date: '2026-04-10', bank: 'K-Bank', acc: '***1234' },
-  { id: 'PAYOUT-770', owner: 'Green Field Arena', amount: '฿42,200', status: 'paid', date: '2026-04-09', bank: 'SCB', acc: '***5567' },
-  { id: 'PAYOUT-769', owner: 'Grand Stadium', amount: '฿280,000', status: 'paid', date: '2026-04-09', bank: 'Bangkok Bank', acc: '***8890' },
-  { id: 'PAYOUT-768', owner: 'Pro Field Hub', amount: '฿52,000', status: 'pending', date: '2026-04-08', bank: 'K-Bank', acc: '***2241' },
-  { id: 'PAYOUT-767', owner: 'Elite Soccer', amount: '฿12,400', status: 'cancelled', date: '2026-04-08', bank: 'Krungsri', acc: '***9910' },
+  { id: 1, owner: 'คุณวิทวัส เจริญผล', amount: '฿45,000', status: 'pending', date: '2026-04-10', bank: 'KBANK x-4491' },
+  { id: 2, owner: 'หจก. สปอร์ตกรุ๊ป', amount: '฿120,500', status: 'paid', date: '2026-04-05', bank: 'SCB x-0029' },
+  { id: 3, owner: 'คุณสมหญิง รักสุขภาพ', amount: '฿8,200', status: 'pending', date: '2026-04-09', bank: 'BBL x-8812' },
+  { id: 4, owner: 'บจก. กรีนสเตเดี้ยม', amount: '฿32,400', status: 'paid', date: '2026-04-01', bank: 'BAY x-5521' },
 ];
 
 export default function PayoutsPage() {
@@ -54,12 +57,11 @@ export default function PayoutsPage() {
   const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [bankFilter, setBankFilter] = useState('all');
   const [isLoading, setIsLoading] = useState(true);
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
 
   useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 1500);
+    const timer = setTimeout(() => setIsLoading(false), 1200);
     return () => clearTimeout(timer);
   }, []);
 
@@ -72,242 +74,163 @@ export default function PayoutsPage() {
   };
 
   const filteredPayouts = payoutsData.filter(payout => {
-    const matchesSearch = payout.owner.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                         payout.id.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = payout.owner.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || payout.status === statusFilter;
-    const matchesBank = bankFilter === 'all' || payout.bank === bankFilter;
-    return matchesSearch && matchesStatus && matchesBank;
+    return matchesSearch && matchesStatus;
   });
 
   const sortedPayouts = [...filteredPayouts].sort((a: any, b: any) => {
     if (!sortConfig) return 0;
     const { key, direction } = sortConfig;
-    
     let valA = a[key];
     let valB = b[key];
-
     if (key === 'amount') {
       valA = parseFloat(valA.replace(/[฿,]/g, ''));
       valB = parseFloat(valB.replace(/[฿,]/g, ''));
     }
-
     if (valA < valB) return direction === 'asc' ? -1 : 1;
     if (valA > valB) return direction === 'asc' ? 1 : -1;
     return 0;
   });
 
-  const handleMarkAsPaid = (id: string) => {
-    toast.promise(new Promise((resolve) => setTimeout(resolve, 1500)), {
-      loading: 'Processing payout...',
-      success: `Payout ${id} marked as PAID.`,
-      error: 'Failed to process payout.',
-    });
+  const handleApprovePayout = (id: number) => {
+    toast.success(`ทำเครื่องหมายรายการ #${id} ว่า 'จ่ายเงินแล้ว' เรียบร้อยแล้ว`);
   };
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Payout Management</h1>
-          <p className="text-muted-foreground mt-1 text-lg">Process earnings for venue partners and track payout history.</p>
+          <h1 className="text-3xl font-black tracking-tight">การถอนเงิน</h1>
+          <p className="text-muted-foreground mt-1 font-bold">จัดการคำขอถอนเงินและประวัติการจ่ายเงินให้เจ้าของสนาม</p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" className="h-11 font-bold px-6 border-2">
-             <History size={18} className="mr-2" /> Global History
-          </Button>
-          {isAdmin && (
-            <Button className="h-11 font-black px-8 shadow-lg shadow-emerald-500/20 bg-emerald-600 hover:bg-emerald-700 gap-2">
-               <CheckCircle2 size={18} /> Batch Process
-            </Button>
-          )}
-        </div>
+        <Button variant="outline" className="h-11 px-6 font-bold border-2 rounded-xl">
+          <BadgeDollarSign size={16} className="mr-2" /> รายงานภาษี ณ ที่จ่าย
+        </Button>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-3">
-        <Card className="border-none shadow-md overflow-hidden bg-primary text-primary-foreground">
-          <CardContent className="p-6 flex flex-col justify-between h-full">
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-black uppercase tracking-widest opacity-80">Pending Payouts</p>
-              <div className="bg-white/20 p-2 rounded-xl">
-                 <BadgeDollarSign size={20} />
-              </div>
+      <div className="grid gap-4 md:grid-cols-3">
+        {[
+          { label: 'รอดำเนินการ (ยอดรวม)', value: '฿142,500', icon: Wallet, color: 'text-amber-600', bg: 'bg-amber-50' },
+          { label: 'จ่ายแล้วเดือนนี้', value: '฿2,450,000', icon: CheckCircle2, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+          { label: 'กำหนดจ่ายรอบถัดไป', value: '15 เม.ย. 2026', icon: Calendar, color: 'text-blue-600', bg: 'bg-blue-50' },
+        ].map((item, idx) => (
+          <div key={idx} className="flex items-center gap-4 border-none shadow-lg rounded-2xl p-5 bg-card/50 backdrop-blur-sm">
+            <div className={`p-3 ${item.bg} ${item.color} rounded-xl shadow-sm`}>
+              <item.icon size={20} />
             </div>
-            <div className="mt-8">
-              <h3 className="text-4xl font-black">฿428,200</h3>
-              <p className="text-xs mt-2 font-bold opacity-70">12 batches waiting approval</p>
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{item.label}</p>
+              <p className="text-2xl font-black tracking-tight">{item.value}</p>
             </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-none shadow-md">
-          <CardContent className="p-6 flex flex-col justify-between h-full">
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-black uppercase tracking-widest text-muted-foreground">Paid MTD</p>
-              <div className="bg-emerald-500/10 p-2 rounded-xl text-emerald-500">
-                 <CheckCircle2 size={20} />
-              </div>
-            </div>
-            <div className="mt-8">
-              <h3 className="text-4xl font-black">฿1.2M</h3>
-              <p className="text-xs mt-2 font-bold text-emerald-500 flex items-center gap-1">
-                 <ArrowUpRight size={12} /> 15% increase from last month
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-none shadow-md">
-          <CardContent className="p-6 flex flex-col justify-between h-full">
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-black uppercase tracking-widest text-muted-foreground">Internal Reserve</p>
-              <div className="bg-blue-500/10 p-2 rounded-xl text-blue-500">
-                 <Wallet size={20} />
-              </div>
-            </div>
-            <div className="mt-8">
-              <h3 className="text-4xl font-black">฿4.5M</h3>
-              <p className="text-xs mt-2 font-bold text-muted-foreground">Safe liquidity level</p>
-            </div>
-          </CardContent>
-        </Card>
+          </div>
+        ))}
       </div>
 
-      <div className="bg-card rounded-2xl border shadow-md overflow-hidden ring-1 ring-border/50">
-        <div className="p-5 border-b flex flex-col md:flex-row gap-4 items-center justify-between bg-muted/20">
-          <div className="flex flex-col md:flex-row gap-4 w-full md:items-center">
-            <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input 
-                placeholder="Search owner or ID..." 
-                className="pl-9 h-11 bg-background border-none ring-1 ring-border shadow-sm font-medium"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
+      <div className="bg-card rounded-3xl border shadow-xl overflow-hidden ring-1 ring-border/50">
+        <div className="p-6 border-b bg-muted/20 flex flex-col md:flex-row gap-4 items-center justify-between">
+          <div className="relative w-full md:max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input 
+              placeholder="ค้นหาชื่อเจ้าของสนาม..." 
+              className="pl-10 h-11 border-2 font-bold bg-background focus-visible:ring-primary rounded-xl"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <div className="flex items-center gap-3 w-full md:w-auto">
             <Select value={statusFilter} onValueChange={(val) => setStatusFilter(val || 'all')}>
-              <SelectTrigger className="w-full md:w-[150px] h-11 font-bold border-2">
-                <SelectValue placeholder="Status" />
+              <SelectTrigger className="w-full md:w-[180px] h-11 border-2 font-bold rounded-xl">
+                <SelectValue placeholder="สถานะ" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all" className="font-bold">All Status</SelectItem>
-                <SelectItem value="pending" className="font-bold text-amber-600">Pending</SelectItem>
-                <SelectItem value="paid" className="font-bold text-emerald-600">Paid</SelectItem>
-                <SelectItem value="cancelled" className="font-bold text-rose-600">Cancelled</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={bankFilter} onValueChange={(val) => setBankFilter(val || 'all')}>
-              <SelectTrigger className="w-full md:w-[150px] h-11 font-bold border-2">
-                <SelectValue placeholder="Bank" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all" className="font-bold">All Banks</SelectItem>
-                <SelectItem value="K-Bank" className="font-bold">K-Bank</SelectItem>
-                <SelectItem value="SCB" className="font-bold">SCB</SelectItem>
-                <SelectItem value="Bangkok Bank" className="font-bold">Bangkok Bank</SelectItem>
-                <SelectItem value="Krungsri" className="font-bold">Krungsri</SelectItem>
+                <SelectItem value="all" className="font-bold">ทุกสถานะ</SelectItem>
+                <SelectItem value="pending" className="font-bold text-amber-600">รอดำเนินการ</SelectItem>
+                <SelectItem value="paid" className="font-bold text-emerald-600">จ่ายแล้ว</SelectItem>
               </SelectContent>
             </Select>
           </div>
-          <Button variant="ghost" className="h-11 font-bold gap-2 px-6">
-            <Download size={16} /> Export
-          </Button>
         </div>
 
         <div className="overflow-x-auto">
           <Table>
-            <TableHeader className="bg-muted/50 sticky top-0 z-10 shadow-sm">
-              <TableRow className="hover:bg-transparent border-b">
-                <TableHead 
-                  className="py-5 px-6 font-black uppercase tracking-widest text-[10px] cursor-pointer hover:text-primary transition-colors"
-                  onClick={() => handleSort('owner')}
-                >
+            <TableHeader className="bg-muted/30 sticky top-0 z-10">
+              <TableRow className="hover:bg-transparent">
+                <TableHead onClick={() => handleSort('owner')} className="font-black text-[10px] uppercase tracking-widest py-5 px-6 cursor-pointer hover:text-primary transition-colors">
                   <div className="flex items-center gap-2">
-                    Owner Name {sortConfig?.key === 'owner' ? (sortConfig.direction === 'asc' ? <ArrowUp size={12} /> : <ArrowDown size={12} />) : <ArrowUpDown size={12} className="opacity-50" />}
+                    เจ้าของสนาม {sortConfig?.key === 'owner' ? (sortConfig.direction === 'asc' ? <ArrowUp size={12} /> : <ArrowDown size={12} />) : <ArrowUpDown size={12} className="opacity-30" />}
                   </div>
                 </TableHead>
-                <TableHead className="py-5 px-6 font-black uppercase tracking-widest text-[10px]">Bank Info</TableHead>
-                <TableHead 
-                  className="py-5 px-6 font-black uppercase tracking-widest text-[10px] cursor-pointer hover:text-primary transition-colors"
-                  onClick={() => handleSort('amount')}
-                >
+                <TableHead onClick={() => handleSort('amount')} className="font-black text-[10px] uppercase tracking-widest py-5 px-6 cursor-pointer hover:text-primary transition-colors">
                   <div className="flex items-center gap-2">
-                    Amount {sortConfig?.key === 'amount' ? (sortConfig.direction === 'asc' ? <ArrowUp size={12} /> : <ArrowDown size={12} />) : <ArrowUpDown size={12} className="opacity-50" />}
+                    จำนวนเงิน {sortConfig?.key === 'amount' ? (sortConfig.direction === 'asc' ? <ArrowUp size={12} /> : <ArrowDown size={12} />) : <ArrowUpDown size={12} className="opacity-30" />}
                   </div>
                 </TableHead>
-                <TableHead className="py-5 px-6 font-black uppercase tracking-widest text-[10px]">Status</TableHead>
-                <TableHead 
-                  className="py-5 px-6 font-black uppercase tracking-widest text-[10px] cursor-pointer hover:text-primary transition-colors"
-                  onClick={() => handleSort('date')}
-                >
+                <TableHead className="font-black text-[10px] uppercase tracking-widest py-5 px-6">สถานะ</TableHead>
+                <TableHead onClick={() => handleSort('date')} className="font-black text-[10px] uppercase tracking-widest py-5 px-6 cursor-pointer hover:text-primary transition-colors">
                   <div className="flex items-center gap-2">
-                    Date {sortConfig?.key === 'date' ? (sortConfig.direction === 'asc' ? <ArrowUp size={12} /> : <ArrowDown size={12} />) : <ArrowUpDown size={12} className="opacity-50" />}
+                    วันที่รอนิุมัติ {sortConfig?.key === 'date' ? (sortConfig.direction === 'asc' ? <ArrowUp size={12} /> : <ArrowDown size={12} />) : <ArrowUpDown size={12} className="opacity-30" />}
                   </div>
                 </TableHead>
-                <TableHead className="py-5 px-6 text-right font-black uppercase tracking-widest text-[10px]">Action</TableHead>
+                <TableHead className="w-[80px] py-5 px-6 text-right"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="p-0">
-                    <TableSkeleton columnCount={6} rowCount={5} />
+                  <TableCell colSpan={5} className="p-0">
+                    <TableSkeleton columnCount={5} rowCount={4} />
                   </TableCell>
                 </TableRow>
               ) : sortedPayouts.map((payout) => (
-                <TableRow key={payout.id} className="cursor-pointer hover:bg-muted/40 transition-colors">
-                  <TableCell className="py-5 px-6">
-                    <div className="space-y-1">
+                <TableRow key={payout.id} className="hover:bg-muted/30 transition-colors border-b last:border-0 border-muted">
+                  <TableCell className="px-6 py-5">
+                    <div>
                       <p className="font-black text-sm text-foreground">{payout.owner}</p>
-                      <p className="text-[10px] font-mono font-bold text-muted-foreground bg-muted inline-block px-1.5 py-0.5 rounded">{payout.id}</p>
+                      <p className="text-[10px] font-bold text-muted-foreground uppercase">{payout.bank}</p>
                     </div>
                   </TableCell>
-                  <TableCell className="py-5 px-6">
-                    <div className="space-y-0.5">
-                       <p className="font-bold text-xs">{payout.bank}</p>
-                       <p className="font-mono text-[10px] text-muted-foreground">{payout.acc}</p>
-                    </div>
-                  </TableCell>
-                  <TableCell className="py-5 px-6">
-                    <p className="font-black text-base text-primary">{payout.amount}</p>
-                  </TableCell>
-                  <TableCell className="py-5 px-6">
+                  <TableCell className="px-6 py-5 font-black text-sm text-primary">{payout.amount}</TableCell>
+                  <TableCell className="px-6 py-5">
                     <Badge 
-                      variant={payout.status === 'paid' ? 'default' : payout.status === 'pending' ? 'outline' : 'destructive'}
-                      className={`rounded-full px-4 py-1.5 text-[10px] font-black uppercase tracking-wider
-                        ${payout.status === 'paid' ? 'bg-emerald-600 hover:bg-emerald-700' : ''}
-                        ${payout.status === 'pending' ? 'text-amber-600 border-amber-600' : ''}
-                      `}
+                      variant={payout.status === 'paid' ? 'default' : 'outline'}
+                      className="rounded-full px-3 py-0.5 text-[9px] font-black uppercase tracking-widest"
                     >
-                      {payout.status === 'pending' && <Clock size={10} className="mr-1.5 animate-pulse" />}
-                      {payout.status}
+                      {payout.status === 'paid' ? 'จ่ายแล้ว' : 'รอดำเนินการ'}
                     </Badge>
                   </TableCell>
-                  <TableCell className="py-5 px-6">
-                    <p className="text-xs font-bold text-muted-foreground font-mono">{payout.date}</p>
-                  </TableCell>
-                  <TableCell className="py-5 px-6 text-right">
-                    <div className="flex items-center justify-end gap-2">
-                       <Button size="icon" variant="outline" className="h-9 w-9 rounded-xl border-2 hover:bg-primary hover:text-white transition-all">
-                          <Eye size={16} />
-                       </Button>
-                       {isAdmin && payout.status === 'pending' && (
-                         <ConfirmAction
-                           trigger={
-                             <Button 
-                               size="sm" 
-                               className="h-9 bg-emerald-600 hover:bg-emerald-700 font-black text-[10px] tracking-widest px-4 rounded-xl shadow-md uppercase"
-                             >
-                               Approve & Pay
-                             </Button>
-                           }
-                           title="Approve Payout?"
-                           description={`Confirming payment of ${payout.amount} to ${payout.owner}. This action will mark researchers as paid.`}
-                           onConfirm={() => handleMarkAsPaid(payout.id)}
-                           variant="success"
-                           confirmText="Yes, Send Payment"
-                         />
-                       )}
-                    </div>
+                  <TableCell className="px-6 py-5 text-sm font-medium">{payout.date}</TableCell>
+                  <TableCell className="px-6 py-5 text-right">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger
+                        render={
+                          <Button variant="ghost" className="h-9 w-9 p-0 hover:bg-muted rounded-xl">
+                            <MoreVertical size={16} />
+                          </Button>
+                        }
+                      />
+                      <DropdownMenuContent align="end" className="w-[200px] rounded-2xl shadow-xl border-2">
+                        <DropdownMenuLabel className="font-black text-xs uppercase tracking-widest px-4 py-3">การดำเนินการ</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem className="flex items-center gap-3 py-3 px-4 font-bold text-sm">
+                          <ExternalLink size={16} /> ดูรายละเอียด
+                        </DropdownMenuItem>
+                        {isAdmin && payout.status === 'pending' && (
+                          <ConfirmAction
+                             trigger={
+                               <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="flex items-center gap-3 py-3 px-4 font-bold text-sm text-emerald-600">
+                                 <CheckCircle2 size={16} /> ทำเครื่องหมายว่า "จ่ายแล้ว"
+                               </DropdownMenuItem>
+                             }
+                             title="ยืนยันการจ่ายเงิน?"
+                             description={`คุณยืนยันว่าได้ทำการโอนเงินจำนวน ${payout.amount} ให้กับ ${payout.owner} เรียบร้อยแล้ว`}
+                             onConfirm={() => handleApprovePayout(payout.id)}
+                             variant="success"
+                             confirmText="ยืนยันการจ่ายเงิน"
+                          />
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </TableCell>
                 </TableRow>
               ))}

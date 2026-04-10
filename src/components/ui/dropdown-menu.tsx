@@ -15,13 +15,11 @@ function DropdownMenuPortal({ ...props }: MenuPrimitive.Portal.Props) {
 }
 
 function DropdownMenuTrigger({
-  nativeButton,
   ...props
 }: MenuPrimitive.Trigger.Props) {
   return (
     <MenuPrimitive.Trigger
       data-slot="dropdown-menu-trigger"
-      nativeButton={nativeButton ?? (props.render ? false : undefined)}
       {...props}
     />
   )
